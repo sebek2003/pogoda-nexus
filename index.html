@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Pogoda Nexus</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+<style>
+.wind-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.wind-windmill {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    display: inline-block;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+.wind-windmill::before,
+.wind-windmill::after {
+    content: '';
+    position: absolute;
+    background: currentColor;
+    border-radius: 2px;
+}
+.wind-windmill::before {
+    top: 0;
+    left: 8px;
+    width: 4px;
+    height: 20px;
+}
+.wind-windmill::after {
+    top: 8px;
+    left: 0;
+    width: 20px;
+    height: 4px;
+}
+@keyframes spin-cw {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes spin-ccw {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+</style>
+</head>
+
+<body>
+
+<div class="background">
+
+<div class="glow glow1"></div>
+<div class="glow glow2"></div>
+<div class="glow glow3"></div>
+
+<div id="stars"></div>
+
+</div>
+
+<header>
+
+<div class="logo">
+Pogoda Nexus
+</div>
+
+<div class="header-right">
+
+<input
+id="citySearch"
+type="text"
+placeholder="Szukaj miasta..."
+>
+
+<button id="searchBtn">
+🔍
+</button>
+
+<button id="themeBtn">
+🌙
+</button>
+
+</div>
+
+</header>
+
+<main>
+
+<section class="hero glass">
+
+<div class="hero-left">
+
+<div id="city" class="city">
+Białystok
+</div>
+
+<div id="temperature" class="temperature">
+21°
+</div>
+
+<div id="description" class="description">
+Ładowanie...
+</div>
+
+<div class="details">
+
+<div>
+💧
+<span id="humidity">
+--
+</span>%
+</div>
+
+<div>
+    <div class="wind-display">
+        <div id="windMill" class="wind-windmill" style="animation: spin-cw 3s linear infinite;"></div>
+        💨
+        <span id="wind">
+        20
+        </span> km/h
+    </div>
+</div>
+
+<div>
+🌅
+<span id="sunrise">
+--
+</span>
+</div>
+
+<div>
+🌇
+<span id="sunset">
+--
+</span>
+</div>
+
+</div>
+
+</div>
+
+<div class="hero-right">
+
+<div id="weatherIcon">
+
+<svg
+width="180"
+height="180"
+viewBox="0 0 180 180">
+
+<circle
+cx="90"
+cy="90"
+r="40"
+class="sun"/>
+
+</svg>
+
+</div>
+
+</div>
+
+</section>
+<section class="glass">
+
+    <h2>
+    Prognoza 24h
+    </h2>
+
+    <div
+    id="hourlyForecast"
+    class="hourly">
+    </div>
+
+</section>
+<section class="glass">
+
+    <h2>
+    Prognoza 7 dni
+    </h2>
+
+    <div
+    id="dailyForecast"
+    class="daily-grid">
+    </div>
+
+</section>
+</main>
+<div id="hourModal" class="modal">
+
+    <div class="modal-content glass">
+
+        <button id="closeModal" class="close-btn">
+            ✕
+        </button>
+
+        <h2 id="modalHour">
+            12:00
+        </h2>
+
+        <div id="modalInfo"></div>
+
+    </div>
+
+</div>
+<script>
+function updateWindMill(speedKmh, direction) {
+    const mill = document.getElementById('windMill');
+    if (!mill) return;
+    if (!speedKmh || speedKmh <= 0) {
+        mill.style.animation = 'none';
+        return;
+    }
+    const duration = 60 / speedKmh;
+    const anim = direction === 'left' ? 'spin-ccw' : 'spin-cw';
+    mill.style.animation = `${anim} ${duration}s linear infinite`;
+}
+</script>
+<script src="app.js"></script>
+
+</body>
+</html>

@@ -307,14 +307,14 @@ class="sun"/>
         <div class="custom-radar-wrapper">
             <div id="radarCanvasArea" class="radar-canvas-area">
                 <div class="map-background-grid"></div>
-                <div class="radar-info-overlay" id="radarStatus">Łaczenie z siecią wyładowań...</div>
+                <div class="radar-info-overlay" id="radarStatus">Łączenie z siecią wyładowań...</div>
                 <div id="realStrikesContainer" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none;"></div>
             </div>
             <div class="radar-legend">
-                <span class="legend-item"><span class="legend-dot dot-yellow"></span> Niegroźne (< 20kA)</span>
+                <span class="legend-item"><span class="legend-dot dot-yellow"></span> Niegroźne (&lt; 20kA)</span>
                 <span class="legend-item"><span class="legend-dot dot-orange"></span> Średniogroźne (20-40kA)</span>
                 <span class="legend-item"><span class="legend-dot dot-red"></span> Groźne (40-75kA)</span>
-                <span class="legend-item"><span class="legend-dot dot-purple"></span> Najgroźniejszy (> 75kA)</span>
+                <span class="legend-item"><span class="legend-dot dot-purple"></span> Najgroźniejszy (&gt; 75kA)</span>
             </div>
         </div>
     </div>
@@ -353,7 +353,7 @@ function updateWindMill(speedKmh, direction) {
     mill.style.animation = `${anim} ${duration}s linear infinite`;
 }
 
-// Globalny system wyładowan na żywo (Blitzortung / Open source feed) z pamięcią 15 sekund
+// Globalny system wyładowań na żywo z pamięcią 15 sekund
 function initRealLightningRadar() {
     const container = document.getElementById('realStrikesContainer');
     const statusEl = document.getElementById('radarStatus');
@@ -362,7 +362,6 @@ function initRealLightningRadar() {
     let centerLat = 52.0;
     let centerLon = 19.0;
 
-    // Próbujemy pobrać lokalizację użytkownika żeby wycentrować radar na jego region świata
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -374,15 +373,12 @@ function initRealLightningRadar() {
     }
 
     function addStrike(lat, lon, intensity) {
-        // Rzutowanie współrzędnych geograficznych świata na prostokąt kontenera radaru
-        // Skala mapy: +/- 20 stopni wokół punktu środkowego
         const latSpan = 20;
         const lonSpan = 30;
 
         const x = ((lon - (centerLon - lonSpan/2)) / lonSpan) * 100;
         const y = (( (centerLat + latSpan/2) - lat) / latSpan) * 100;
 
-        // Jeśli wyładowanie mieści się w obecnym kadrze mapy
         if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
             const strike = document.createElement('div');
             
@@ -409,7 +405,6 @@ function initRealLightningRadar() {
 
             container.appendChild(strike);
 
-            // Ścisłe utrzymywanie wyładowania dokładnie przez 15 sekund
             setTimeout(() => {
                 if (strike && strike.parentElement) {
                     strike.remove();
@@ -418,12 +413,10 @@ function initRealLightningRadar() {
         }
     }
 
-    // Pobieranie danych o wyładowaniach z otwartego API Blitzortung / strumienia globalnego
     async function fetchLightningData() {
         try {
             statusEl.textContent = 'Nasłuchiwanie wyładowń na świecie...';
             
-            // Pobieramy aktualne dane o wyładowaniach z publicznych strumieni nasłuchu burz
             const response = await fetch('https://maps.blitzortung.org/getData.php?1');
             if (!response.ok) throw new Error('Błąd sieci');
             
@@ -432,9 +425,7 @@ function initRealLightningRadar() {
             if (Array.isArray(data) && data.length > 0) {
                 statusEl.textContent = `Aktywnych wyładowań: ${data.length}`;
                 
-                // Przetwarzamy paczkę wyładowań z całego globu
                 data.forEach(item => {
-                    // item format zazwyczaj zawiera: [id, time, lat, lon, altitude, polarity, amplitude/intensity]
                     if (item && item.length >= 4) {
                         const lat = parseFloat(item[2]);
                         const lon = parseFloat(item[3]);
@@ -448,7 +439,6 @@ function initRealLightningRadar() {
             }
         } catch (e) {
             statusEl.textContent = 'Tryb globalny: Symulacja strumienia API';
-            // Awaryjne generowanie realistycznych punktów z całego świata w przypadku restrykcji CORS serwera danych
             simulateGlobalStrike();
         }
     }
@@ -460,7 +450,6 @@ function initRealLightningRadar() {
         addStrike(randomLat, randomLon, randomAmp);
     }
 
-    // Start pobierania danych co 3 sekundy
     fetchLightningData();
     setInterval(fetchLightningData, 3000);
 }

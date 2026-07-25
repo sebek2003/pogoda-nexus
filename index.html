@@ -51,6 +51,18 @@
     from { transform: rotate(360deg); }
     to { transform: rotate(0deg); }
 }
+.radar-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: #1e1e1e;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    color: #fff;
+}
+.radar-container h3 {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
 </style>
 </head>
 
@@ -169,8 +181,8 @@ class="sun"/>
 </div>
 
 </section>
-<section class="glass">
 
+<section class="glass">
     <h2>
     Prognoza 24h
     </h2>
@@ -179,10 +191,9 @@ class="sun"/>
     id="hourlyForecast"
     class="hourly">
     </div>
-
 </section>
-<section class="glass">
 
+<section class="glass">
     <h2>
     Prognoza 7 dni
     </h2>
@@ -191,9 +202,19 @@ class="sun"/>
     id="dailyForecast"
     class="daily-grid">
     </div>
-
 </section>
+
+<section class="glass">
+    <div class="radar-container">
+        <h3>Radar pogodowy z całego świata</h3>
+        <div id="radar-map" style="width: 100%; height: 400px; border-radius: 12px; overflow: hidden;">
+            <iframe id="rainviewer-iframe" src="" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe>
+        </div>
+    </div>
+</section>
+
 </main>
+
 <div id="hourModal" class="modal">
 
     <div class="modal-content glass">
@@ -211,6 +232,7 @@ class="sun"/>
     </div>
 
 </div>
+
 <script>
 function updateWindMill(speedKmh, direction) {
     const mill = document.getElementById('windMill');
@@ -223,8 +245,31 @@ function updateWindMill(speedKmh, direction) {
     const anim = direction === 'left' ? 'spin-ccw' : 'spin-cw';
     mill.style.animation = `${anim} ${duration}s linear infinite`;
 }
+
+function loadRadar(lat, lon, zoom = 7) {
+    const iframe = document.getElementById('rainviewer-iframe');
+    if (iframe) {
+        iframe.src = `https://www.rainviewer.com/map.html?loc=${lat},${lon},${zoom}&ozoom=5&c=1&m=1&loc=true`;
+    }
+}
+
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            loadRadar(lat, lon, 8);
+        },
+        (error) => {
+            loadRadar(50.0, 20.0, 4);
+        }
+    );
+} else {
+    loadRadar(50.0, 20.0, 4);
+}
 </script>
-<script src="app.js"></script>
+
+<script src="./app.js"></script>
 
 </body>
 </html>

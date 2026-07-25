@@ -75,6 +75,91 @@
     height: 100%;
     object-fit: contain;
 }
+
+/* Własnoręczny radar burzowy z kropkami wyładowań */
+.custom-radar-wrapper {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background: #121216;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.radar-canvas-area {
+    position: relative;
+    flex-grow: 1;
+    background: radial-gradient(circle at center, #1b1b2f 0%, #0d0d14 100%);
+    cursor: grab;
+}
+
+.radar-canvas-area:active {
+    cursor: grabbing;
+}
+
+.radar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 10px 15px;
+    background: rgba(0,0,0,0.4);
+    font-size: 0.85rem;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.dot-yellow { background: #ffd700; color: #ffd700; }
+.dot-orange { background: #ff8c00; color: #ff8c00; }
+.dot-red { background: #ff2222; color: #ff2222; }
+.dot-purple { background: #9400d3; color: #9400d3; }
+
+.radar-sweep {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 600px;
+    height: 600px;
+    margin-top: -300px;
+    margin-left: -300px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg at 50% 50%, rgba(0, 255, 128, 0) 0deg, rgba(0, 255, 128, 0.15) 360deg);
+    animation: radarScan 4s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes radarScan {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.strike-dot {
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: strikePulse 1.5s infinite;
+}
+
+@keyframes strikePulse {
+    0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; box-shadow: 0 0 4px currentColor; }
+    50% { transform: translate(-50%, -50%) scale(1.6); opacity: 0.4; box-shadow: 0 0 12px currentColor; }
+    100% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; box-shadow: 0 0 4px currentColor; }
+}
 </style>
 </head>
 
@@ -218,9 +303,18 @@ class="sun"/>
 
 <section class="glass">
     <div class="radar-container">
-        <h3>Radar pogodowy z całego świata</h3>
-        <div id="radar-map" style="width: 100%; height: 400px; border-radius: 12px; overflow: hidden;">
-            <iframe id="rainviewer-iframe" src="" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen></iframe>
+        <h3>Radar Burzowy – Wyładowania na żywo</h3>
+        <div class="custom-radar-wrapper">
+            <div id="radarCanvasArea" class="radar-canvas-area">
+                <div class="radar-sweep"></div>
+                <div id="strikesContainer" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none;"></div>
+            </div>
+            <div class="radar-legend">
+                <span class="legend-item"><span class="legend-dot dot-yellow"></span> Niegroźne</span>
+                <span class="legend-item"><span class="legend-dot dot-orange"></span> Średniogroźne</span>
+                <span class="legend-item"><span class="legend-dot dot-red"></span> Groźne</span>
+                <span class="legend-item"><span class="legend-dot dot-purple"></span> Najgroźniejszy</span>
+            </div>
         </div>
     </div>
 </section>
@@ -258,27 +352,68 @@ function updateWindMill(speedKmh, direction) {
     mill.style.animation = `${anim} ${duration}s linear infinite`;
 }
 
-function loadRadar(lat, lon, zoom = 7) {
-    const iframe = document.getElementById('rainviewer-iframe');
-    if (iframe) {
-        iframe.src = `https://www.rainviewer.com/map.html?loc=${lat},${lon},${zoom}&ozoom=5&c=1&m=1&loc=true`;
+// System własnoręcznego radaru burzowego z kropkami wyładowań
+function initCustomRadar() {
+    const container = document.getElementById('strikesContainer');
+    if (!container) return;
+
+    // Definicje poziomów zagrożenia
+    const levels = [
+        { class: 'dot-yellow', size: '6px', weight: 40 },
+        { class: 'dot-orange', size: '8px', weight: 30 },
+        { class: 'dot-red', size: '10px', weight: 20 },
+        { class: 'dot-purple', size: '14px', weight: 10 }
+    ];
+
+    function getRandomLevel() {
+        const totalWeight = levels.reduce((sum, lvl) => sum + lvl.weight, 0);
+        let randomNum = Math.random() * totalWeight;
+        for (let lvl of levels) {
+            if (randomNum < lvl.weight) return lvl;
+            randomNum -= lvl.weight;
+        }
+        return levels[0];
     }
+
+    function spawnStrike() {
+        if (container.children.length > 35) {
+            container.removeChild(container.firstChild);
+        }
+
+        const strike = document.createElement('div');
+        const lvl = getRandomLevel();
+        
+        strike.className = `strike-dot ${lvl.class}`;
+        strike.style.width = lvl.size;
+        strike.style.height = lvl.size;
+        
+        // Losowa pozycja na mapie
+        const x = Math.random() * 92 + 4;
+        const y = Math.random() * 92 + 4;
+        
+        strike.style.left = `${x}%`;
+        strike.style.top = `${y}%`;
+
+        container.appendChild(strike);
+
+        // Usuwanie po jakimś czasie żeby nie zapchać DOM
+        setTimeout(() => {
+            if (strike.parentElement) {
+                strike.remove();
+            }
+        }, 5000);
+    }
+
+    // Generuj wyładowania co chwilę
+    setInterval(spawnStrike, 400);
 }
 
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            loadRadar(lat, lon, 8);
-        },
-        (error) => {
-            loadRadar(50.0, 20.0, 4);
-        }
-    );
-} else {
-    loadRadar(50.0, 20.0, 4);
-}
+document.addEventListener('DOMContentLoaded', () => {
+    initCustomRadar();
+});
 </script>
 
 <script src="./app.js"></script>
+
+</body>
+</html>
